@@ -1,0 +1,164 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:otp="clr-namespace:Maui.Otp;assembly=Maui.Otp"
+             x:Class="Maui.Otp.Sample.MainPage"
+             BackgroundColor="#F5F7FA"
+             Title="Maui.Otp — Phase 1 Test">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="40">
+
+            <!-- ═══════════════════════════════════════ -->
+            <!--  TEST 1 — Default 6-digit OTP          -->
+            <!-- ═══════════════════════════════════════ -->
+            <VerticalStackLayout Spacing="12">
+                <Label Text="① Default 6-digit OTP"
+                       FontSize="16" FontAttributes="Bold"
+                       TextColor="#212121"/>
+                <Label Text="Tap the cells and type digits"
+                       FontSize="13" TextColor="#757575"/>
+
+                <otp:OtpView x:Name="OtpDefault"
+                             Length="6"
+                             OtpCompleted="OnOtpCompleted"/>
+
+                <Label x:Name="LabelDefault"
+                       Text="Value: —"
+                       FontSize="13" TextColor="#2979FF"
+                       HorizontalOptions="Center"/>
+            </VerticalStackLayout>
+
+            <BoxView HeightRequest="1" Color="#E0E0E0"/>
+
+            <!-- ═══════════════════════════════════════ -->
+            <!--  TEST 2 — PIN mode (masked)            -->
+            <!-- ═══════════════════════════════════════ -->
+            <VerticalStackLayout Spacing="12">
+                <Label Text="② PIN Mode (IsPassword = true)"
+                       FontSize="16" FontAttributes="Bold"
+                       TextColor="#212121"/>
+                <Label Text="Digits are masked with ●"
+                       FontSize="13" TextColor="#757575"/>
+
+                <otp:OtpView x:Name="OtpPin"
+                             Length="4"
+                             IsPassword="True"/>
+
+                <Label x:Name="LabelPin"
+                       Text="Value: —"
+                       FontSize="13" TextColor="#2979FF"
+                       HorizontalOptions="Center"/>
+            </VerticalStackLayout>
+
+            <BoxView HeightRequest="1" Color="#E0E0E0"/>
+
+            <!-- ═══════════════════════════════════════ -->
+            <!--  TEST 3 — Error State                  -->
+            <!-- ═══════════════════════════════════════ -->
+            <VerticalStackLayout Spacing="12">
+                <Label Text="③ Error State"
+                       FontSize="16" FontAttributes="Bold"
+                       TextColor="#212121"/>
+                <Label Text="Cells turn red, ready for shake in Phase 2"
+                       FontSize="13" TextColor="#757575"/>
+
+                <otp:OtpView x:Name="OtpError"
+                             Length="6"
+                             HasError="True"
+                             Value="123456"/>
+            </VerticalStackLayout>
+
+            <BoxView HeightRequest="1" Color="#E0E0E0"/>
+
+            <!-- ═══════════════════════════════════════ -->
+            <!--  TEST 4 — Success State                -->
+            <!-- ═══════════════════════════════════════ -->
+            <VerticalStackLayout Spacing="12">
+                <Label Text="④ Success State"
+                       FontSize="16" FontAttributes="Bold"
+                       TextColor="#212121"/>
+                <Label Text="Cells turn green, ready for bounce in Phase 2"
+                       FontSize="13" TextColor="#757575"/>
+
+                <otp:OtpView x:Name="OtpSuccess"
+                             Length="6"
+                             HasSuccess="True"
+                             Value="654321"/>
+            </VerticalStackLayout>
+
+            <BoxView HeightRequest="1" Color="#E0E0E0"/>
+
+            <!-- ═══════════════════════════════════════ -->
+            <!--  TEST 5 — Disabled State               -->
+            <!-- ═══════════════════════════════════════ -->
+            <VerticalStackLayout Spacing="12">
+                <Label Text="⑤ Disabled State"
+                       FontSize="16" FontAttributes="Bold"
+                       TextColor="#212121"/>
+                <Label Text="Grayed out, input blocked"
+                       FontSize="13" TextColor="#757575"/>
+
+                <otp:OtpView x:Name="OtpDisabled"
+                             Length="6"
+                             IsOtpEnabled="False"
+                             Value="999"/>
+            </VerticalStackLayout>
+
+            <BoxView HeightRequest="1" Color="#E0E0E0"/>
+
+            <!-- ═══════════════════════════════════════ -->
+            <!--  TEST 6 — Custom Style                 -->
+            <!-- ═══════════════════════════════════════ -->
+            <VerticalStackLayout Spacing="12">
+                <Label Text="⑥ Custom Style (Rounded / Dark Theme)"
+                       FontSize="16" FontAttributes="Bold"
+                       TextColor="#212121"/>
+                <Label Text="Custom OtpCellStyle applied from code-behind"
+                       FontSize="13" TextColor="#757575"/>
+
+                <otp:OtpView x:Name="OtpCustom"
+                             Length="6"/>
+            </VerticalStackLayout>
+
+            <BoxView HeightRequest="1" Color="#E0E0E0"/>
+
+            <!-- ═══════════════════════════════════════ -->
+            <!--  TEST 7 — Interactive Verify Button    -->
+            <!-- ═══════════════════════════════════════ -->
+            <VerticalStackLayout Spacing="12">
+                <Label Text="⑦ Interactive — Type + Verify"
+                       FontSize="16" FontAttributes="Bold"
+                       TextColor="#212121"/>
+                <Label Text="Type 123456 → tap Verify → see success/error"
+                       FontSize="13" TextColor="#757575"/>
+
+                <otp:OtpView x:Name="OtpInteractive"
+                             Length="6"
+                             ValueChanged="OnInteractiveValueChanged"/>
+
+                <Label x:Name="LabelInteractive"
+                       Text="Waiting for input..."
+                       FontSize="13" TextColor="#757575"
+                       HorizontalOptions="Center"/>
+
+                <HorizontalStackLayout Spacing="12" HorizontalOptions="Center">
+                    <Button Text="✅ Verify"
+                            Clicked="OnVerifyClicked"
+                            BackgroundColor="#2979FF"
+                            TextColor="White"
+                            CornerRadius="10"
+                            Padding="20,10"/>
+
+                    <Button Text="🔄 Clear"
+                            Clicked="OnClearClicked"
+                            BackgroundColor="#E0E0E0"
+                            TextColor="#212121"
+                            CornerRadius="10"
+                            Padding="20,10"/>
+                </HorizontalStackLayout>
+            </VerticalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
