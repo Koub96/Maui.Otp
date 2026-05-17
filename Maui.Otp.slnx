@@ -1,4 +1,3 @@
 <Solution>
   <Project Path="Maui.Otp.csproj" />
-  <Project Path="samples/Maui.Otp.Sample/Maui.Otp.Sample.csproj" Id="3ae4ea17-bbe5-4acd-a87d-f25b30b0f0d5" />
 </Solution>
