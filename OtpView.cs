@@ -1,4 +1,5 @@
 ﻿using Maui.Otp.Models;
+using Maui.Otp.Services;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
 
@@ -14,8 +15,8 @@ public class OtpView : ContentView
     #region Private Fields
 
     private readonly HorizontalStackLayout _cellContainer;
-    private readonly Entry _hiddenEntry;         // invisible entry that captures keyboard input
-    private readonly List<GraphicsView> _cells;  // visual cell drawables
+    private readonly Entry _hiddenEntry;        // invisible entry that captures keyboard input
+    private readonly List<GraphicsView> _cells; // visual cell drawables
     private string _currentValue = string.Empty;
 
     #endregion
@@ -245,10 +246,21 @@ public class OtpView : ContentView
 
     #endregion
 
+    #region Private Properties
+
+    private readonly IOtpPlatformService? _platformService;
+
+    #endregion
+
     #region Constructor
 
     public OtpView()
     {
+        // Resolve platform service from DI
+        _platformService = IPlatformApplication.Current?
+            .Services
+            .GetService<IOtpPlatformService>();
+
         _cells = new List<GraphicsView>();
 
         // Hidden entry — captures all keyboard input invisibly
@@ -325,7 +337,6 @@ public class OtpView : ContentView
             Drawable = drawable,
             WidthRequest = CellStyle.Width,
             HeightRequest = CellStyle.Height,
-            // Accessibility
             AutomationId = $"OtpCell_{index}",
         };
 
@@ -369,6 +380,10 @@ public class OtpView : ContentView
         }
 
         _currentValue = filtered;
+
+        // Haptic feedback on every digit input (add/remove)
+        if (HapticFeedbackEnabled)
+            _platformService?.TriggerHaptic(HapticType.Input);
 
         // Update bindable Value property (triggers two-way binding)
         Value = _currentValue;
@@ -418,8 +433,12 @@ public class OtpView : ContentView
         if (hasError)
         {
             RedrawAllCells();
+
+            //Haptic feedback on error state — fires only when HasError becomes true
+            if (HapticFeedbackEnabled)
+                _platformService?.TriggerHaptic(HapticType.Error);
+
             // Phase 2: ShakeAnimation.RunAsync(this);
-            // Phase 2: HapticService.Error();
         }
         else
         {
@@ -432,8 +451,12 @@ public class OtpView : ContentView
         if (hasSuccess)
         {
             RedrawAllCells();
+
+            // Haptic feedback on success state — fires only when HasSuccess becomes true
+            if (HapticFeedbackEnabled)
+                _platformService?.TriggerHaptic(HapticType.Success);
+
             // Phase 2: BounceAnimation.RunAsync(this);
-            // Phase 2: HapticService.Success();
         }
         else
         {

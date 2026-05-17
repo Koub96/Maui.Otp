@@ -1,4 +1,6 @@
-﻿namespace Maui.Otp.Extensions;
+﻿using Maui.Otp.Services;
+
+namespace Maui.Otp.Extensions;
 
 public static class MauiAppBuilderExtensions
 {
@@ -8,11 +10,17 @@ public static class MauiAppBuilderExtensions
     /// </summary>
     public static MauiAppBuilder UseMauiOtp(this MauiAppBuilder builder)
     {
-        builder.ConfigureMauiHandlers(handlers =>
-        {
-            handlers.AddHandler<OtpView, OtpViewHandler>();
-        });
-
+#if ANDROID
+        builder.Services.AddSingleton<IOtpPlatformService,
+            Maui.Otp.Platforms.Android.OtpPlatformService>();
+#elif IOS
+        builder.Services.AddSingleton<IOtpPlatformService,
+            Maui.Otp.Platforms.iOS.OtpPlatformService>();
+#else
+        // Fallback no-op for Windows, Mac, etc.
+        builder.Services.AddSingleton<IOtpPlatformService,
+            OtpPlatformService>();
+#endif
         return builder;
     }
 }
