@@ -19,20 +19,6 @@ public class OtpView : ContentView
     #endregion
 
     #region Bindable Properties
-    /// <summary>If the OTP should auto focus to the first input field.</summary>
-    public static readonly BindableProperty AutoFocusOnFirstFieldProperty =
-        BindableProperty.Create(
-            nameof(Length),
-            typeof(bool),
-            typeof(OtpView),
-            defaultValue: false,
-            propertyChanged: (b, o, n) => ((OtpView)b).OnLengthChanged());
-    public bool AutoFocusOnFirstField
-    {
-        get => (bool)GetValue(AutoFocusOnFirstFieldProperty);
-        set => SetValue(AutoFocusOnFirstFieldProperty, value);
-    }
-
 
     /// <summary>Number of OTP digits/cells. Default is 6.</summary>
     public static readonly BindableProperty LengthProperty =
@@ -442,7 +428,7 @@ public class OtpView : ContentView
 
         RedrawAllCells();
 
-        // Haptic feedback on pastea
+        // Haptic feedback on paste
         if (HapticFeedbackEnabled)
             _platformService.TriggerHaptic(HapticType.Input);
 
@@ -654,12 +640,6 @@ public class OtpView : ContentView
     /// </summary>
     internal bool IsCellFocused(int index)
         => _hiddenEntry.IsFocused && index == Math.Min(_currentValue.Length, Length - 1);
-
-    /// <summary>
-    /// Returns true if the cell at the given index should auto-focus.
-    /// </summary>
-    internal bool ShouldAutoFocus(int index)
-       => index == 0 && AutoFocusOnFirstField;
 
     #endregion
 
