@@ -6,8 +6,6 @@ namespace Maui.Otp;
 
 /// <summary>
 /// OtpView — A feature-rich OTP/PIN input control for .NET MAUI.
-/// Supports SMS auto-read, haptic feedback, shake/bounce animations,
-/// lockout, biometric fallback, clipboard paste, RTL and accessibility.
 /// </summary>
 public class OtpView : ContentView
 {
@@ -253,6 +251,26 @@ public class OtpView : ContentView
     // -------------------------------------------------------
 
     /// <summary>
+    /// When true, OtpCompleted fires automatically when the last digit is entered.
+    /// When false, the consumer must call Submit() manually or listen to ValueChanged.
+    /// Default is true.
+    /// </summary>
+    public static readonly BindableProperty AutoSubmitProperty =
+        BindableProperty.Create(
+            nameof(AutoSubmit),
+            typeof(bool),
+            typeof(OtpView),
+            defaultValue: true);
+
+    public bool AutoSubmit
+    {
+        get => (bool)GetValue(AutoSubmitProperty);
+        set => SetValue(AutoSubmitProperty, value);
+    }
+
+    // -------------------------------------------------------
+
+    /// <summary>
     /// The visual style configuration for all cells.
     /// Assign a custom OtpCellStyle to fully theme the control.
     /// </summary>
@@ -288,12 +306,6 @@ public class OtpView : ContentView
     /// Useful for logging or showing a "Code filled from SMS" toast.
     /// </summary>
     public event EventHandler<string>? SmsCodeReceived;
-
-    /// <summary>
-    /// Fired when the biometric fallback button is tapped.
-    /// The consumer app handles the actual biometric auth.
-    /// </summary>
-    public event EventHandler? BiometricRequested;
 
     #endregion
 
@@ -442,7 +454,9 @@ public class OtpView : ContentView
 
         // Notify listeners
         ValueChanged?.Invoke(this, code);
-        OtpCompleted?.Invoke(this, code);
+
+        if(AutoSubmit)
+            OtpCompleted?.Invoke(this, code);
 
         // Clear clipboard so OTP doesn't linger
         if (ClearClipboardAfterPaste)
@@ -522,7 +536,7 @@ public class OtpView : ContentView
         RedrawAllCells();
 
         // Fire OtpCompleted when all cells are filled
-        if (_currentValue.Length == Length)
+        if (_currentValue.Length == Length && AutoSubmit)
             OtpCompleted?.Invoke(this, _currentValue);
     }
 
@@ -656,6 +670,16 @@ public class OtpView : ContentView
     #endregion
 
     #region Public API
+    /// <summary>
+    /// Manually submits the current OTP value.
+    /// Use when AutoSubmit is false.
+    /// Only fires if all cells are filled.
+    /// </summary>
+    public void Submit()
+    {
+        if (_currentValue.Length == Length)
+            OtpCompleted?.Invoke(this, _currentValue);
+    }
 
     /// <summary>Clears all cells and resets the value.</summary>
     public void Clear()
@@ -683,10 +707,6 @@ public class OtpView : ContentView
             SmsCodeReceived?.Invoke(this, digits);
         }
     }
-
-    /// <summary>Triggers the BiometricRequested event.</summary>
-    public void RequestBiometric()
-        => BiometricRequested?.Invoke(this, EventArgs.Empty);
 
     #endregion
 }
