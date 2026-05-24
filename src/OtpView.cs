@@ -1,7 +1,6 @@
-﻿using Maui.Otp.Models;
+﻿using Maui.Otp.Animations;
+using Maui.Otp.Models;
 using Maui.Otp.Services;
-using Microsoft.Maui.Controls;
-using Microsoft.Maui.Graphics;
 
 namespace Maui.Otp;
 
@@ -171,6 +170,26 @@ public class OtpView : ContentView
         get => (bool)GetValue(HapticFeedbackEnabledProperty);
         set => SetValue(HapticFeedbackEnabledProperty, value);
     }
+
+    // -------------------------------------------------------
+
+    /// <summary>
+    /// Enables or disables animations on error and success.
+    /// Default is true.
+    /// </summary>
+    public static readonly BindableProperty AnimationsEnabledProperty =
+        BindableProperty.Create(
+            nameof(AnimationsEnabled),
+            typeof(bool),
+            typeof(OtpView),
+            defaultValue: true);
+
+    public bool AnimationsEnabled
+    {
+        get => (bool)GetValue(AnimationsEnabledProperty);
+        set => SetValue(AnimationsEnabledProperty, value);
+    }
+
 
     // -------------------------------------------------------
 
@@ -447,7 +466,8 @@ public class OtpView : ContentView
             if (HapticFeedbackEnabled)
                 _platformService?.TriggerHaptic(HapticType.Error);
 
-            // Phase 2: ShakeAnimation.RunAsync(this);
+            if(AnimationsEnabled)
+                _ = ShakeAnimation.RunAsync(_cellContainer);
         }
         else
         {
@@ -465,7 +485,8 @@ public class OtpView : ContentView
             if (HapticFeedbackEnabled)
                 _platformService?.TriggerHaptic(HapticType.Success);
 
-            // Phase 2: BounceAnimation.RunAsync(this);
+            if(AnimationsEnabled)
+                _ = BounceAnimation.RunAsync(_cells);
         }
         else
         {
