@@ -22,6 +22,20 @@ public class OtpView : ContentView
     #endregion
 
     #region Bindable Properties
+    /// <summary>If the OTP should auto focus to the first input field.</summary>
+    public static readonly BindableProperty AutoFocusOnFirstFieldProperty =
+        BindableProperty.Create(
+            nameof(Length),
+            typeof(bool),
+            typeof(OtpView),
+            defaultValue: false,
+            propertyChanged: (b, o, n) => ((OtpView)b).OnLengthChanged());
+    public bool AutoFocusOnFirstField
+    {
+        get => (bool)GetValue(AutoFocusOnFirstFieldProperty);
+        set => SetValue(AutoFocusOnFirstFieldProperty, value);
+    }
+
 
     /// <summary>Number of OTP digits/cells. Default is 6.</summary>
     public static readonly BindableProperty LengthProperty =
@@ -267,8 +281,8 @@ public class OtpView : ContentView
         _hiddenEntry = new Entry
         {
             Opacity = 0,
-            HeightRequest = 1,
-            WidthRequest = 1,
+            HorizontalOptions = LayoutOptions.FillAndExpand,
+            VerticalOptions = LayoutOptions.FillAndExpand,
             InputTransparent = false,
             Keyboard = Keyboard.Numeric,
             MaxLength = Length,
@@ -276,6 +290,8 @@ public class OtpView : ContentView
         };
 
         _hiddenEntry.TextChanged += OnHiddenEntryTextChanged;
+        _hiddenEntry.Focused += (s, e) => RedrawAllCells();
+        _hiddenEntry.Unfocused += (s, e) => RedrawAllCells();
 
         // Cell container — horizontal row of GraphicsView cells
         _cellContainer = new HorizontalStackLayout
@@ -285,10 +301,6 @@ public class OtpView : ContentView
             VerticalOptions = LayoutOptions.Center,
         };
 
-        // Tap on any cell → focus the hidden entry
-        var tapGesture = new TapGestureRecognizer();
-        tapGesture.Tapped += (s, e) => FocusInput();
-        _cellContainer.GestureRecognizers.Add(tapGesture);
 
         // Root layout: cells stacked over the hidden entry
         var rootGrid = new Grid();
@@ -317,7 +329,13 @@ public class OtpView : ContentView
         for (int i = 0; i < Length; i++)
         {
             var cell = CreateCell(i);
+
+            var tap = new TapGestureRecognizer();
+            tap.Tapped += (s, e) => this._hiddenEntry.Focus();
+            cell.GestureRecognizers.Add(tap);
+
             _cells.Add(cell);
+
             _cellContainer.Children.Add(cell);
         }
 
@@ -506,6 +524,12 @@ public class OtpView : ContentView
     /// </summary>
     internal bool IsCellFocused(int index)
         => _hiddenEntry.IsFocused && index == Math.Min(_currentValue.Length, Length - 1);
+
+    /// <summary>
+    /// Returns true if the cell at the given index should auto-focus.
+    /// </summary>
+    internal bool ShouldAutoFocus(int index)
+       => index == 0 && AutoFocusOnFirstField;
 
     #endregion
 

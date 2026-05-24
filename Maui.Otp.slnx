@@ -1,3 +1,6 @@
 <Solution>
-  <Project Path="Maui.Otp.csproj" />
+  <Project Path="samples/Maui.Otp.Sample/Maui.Otp.Sample.csproj" Id="5657405b-e191-41b8-9ad7-9cfa3aeb7e91">
+    <Deploy Solution="Debug|*" />
+  </Project>
+  <Project Path="src\Maui.Otp.csproj" />
 </Solution>
