@@ -320,6 +320,7 @@ public class OtpView : ContentView
     /// <summary>
     /// Builds or rebuilds all cells based on the current Length.
     /// Called on init and when Length changes.
+    /// Also, sets the tap gesture recognizer on each cell to focus the hidden entry in order for the keyboard to appear.
     /// </summary>
     private void BuildCells()
     {
