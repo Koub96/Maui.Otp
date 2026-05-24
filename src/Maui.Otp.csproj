@@ -32,13 +32,7 @@
   </PropertyGroup>
 
   <!-- README included in NuGet package -->
-  <ItemGroup>
-    <None Include="..\README.md" Pack="true" PackagePath="\" Condition="Exists('..\README.md')" />
-  </ItemGroup>
 
   <!-- Android-only: SMS Retriever API -->
-  <ItemGroup Condition="$(TargetFramework.Contains('-android'))">
-    <PackageReference Include="Xamarin.GooglePlayServices.Auth.Api.Phone" Version="118.3.0" />
-  </ItemGroup>
 
 </Project>
