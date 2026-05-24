@@ -16,6 +16,12 @@ public static class MauiAppBuilderExtensions
 #elif IOS
         builder.Services.AddSingleton<IOtpPlatformService,
             Maui.Otp.Platforms.iOS.OtpPlatformService>();
+        builder.ConfigureMauiHandlers(handlers =>
+        {
+        #if IOS
+            handlers.AddHandler<Entry, Maui.Otp.Platforms.iOS.OtpEntryHandler>();
+        #endif
+        });
 #else
         // Fallback no-op for Windows, Mac, etc.
         builder.Services.AddSingleton<IOtpPlatformService,

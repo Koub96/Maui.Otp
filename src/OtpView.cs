@@ -199,16 +199,55 @@ public class OtpView : ContentView
     /// Default is true.
     /// </summary>
     public static readonly BindableProperty AllowPasteProperty =
-        BindableProperty.Create(
-            nameof(AllowPaste),
-            typeof(bool),
-            typeof(OtpView),
-            defaultValue: true);
+    BindableProperty.Create(
+        nameof(AllowPaste),
+        typeof(bool),
+        typeof(OtpView),
+        defaultValue: true,
+        propertyChanged: (b, o, n) => ((OtpView)b).OnAllowPasteChanged((bool)n));
 
     public bool AllowPaste
     {
         get => (bool)GetValue(AllowPasteProperty);
         set => SetValue(AllowPasteProperty, value);
+    }
+
+    /// <summary>
+    /// When true, automatically checks clipboard on focus
+    /// and fills cells if a valid OTP code is found.
+    /// Default is true.
+    /// </summary>
+    public static readonly BindableProperty SmartPasteProperty =
+        BindableProperty.Create(
+            nameof(SmartPaste),
+            typeof(bool),
+            typeof(OtpView),
+            defaultValue: true);
+
+    public bool SmartPaste
+    {
+        get => (bool)GetValue(SmartPasteProperty);
+        set => SetValue(SmartPasteProperty, value);
+    }
+
+    // -------------------------------------------------------
+
+    /// <summary>
+    /// When true, clears the clipboard after a successful paste.
+    /// Prevents OTP codes from lingering in clipboard history.
+    /// Default is true.
+    /// </summary>
+    public static readonly BindableProperty ClearClipboardAfterPasteProperty =
+        BindableProperty.Create(
+            nameof(ClearClipboardAfterPaste),
+            typeof(bool),
+            typeof(OtpView),
+            defaultValue: true);
+
+    public bool ClearClipboardAfterPaste
+    {
+        get => (bool)GetValue(ClearClipboardAfterPasteProperty);
+        set => SetValue(ClearClipboardAfterPasteProperty, value);
     }
 
     // -------------------------------------------------------
@@ -288,7 +327,14 @@ public class OtpView : ContentView
         };
 
         _hiddenEntry.TextChanged += OnHiddenEntryTextChanged;
-        _hiddenEntry.Focused += (s, e) => RedrawAllCells();
+        _hiddenEntry.Focused += async (s, e) =>
+        {
+            RedrawAllCells();
+
+            // Smart paste check on every focus
+            if (SmartPaste && AllowPaste && IsOtpEnabled)
+                await TrySmartPasteAsync();
+        };
         _hiddenEntry.Unfocused += (s, e) => RedrawAllCells();
 
         _hiddenEntry.HandlerChanged += OnHiddenEntryHandlerChanged;
@@ -364,6 +410,45 @@ public class OtpView : ContentView
     #endregion
 
     #region Input Handling
+    /// <summary>
+    /// Checks clipboard for a valid OTP and auto-fills if found.
+    /// Fires haptic + OtpCompleted on success.
+    /// </summary>
+    private async Task TrySmartPasteAsync()
+    {
+        if (_platformService == null) return;
+
+        var code = await ClipboardPasteService.TryGetOtpFromClipboardAsync(
+            _platformService,
+            Length);
+
+        if (code == null) return;
+
+        // Auto-fill the value
+        Value = code;
+
+        // Sync hidden entry
+        _hiddenEntry.TextChanged -= OnHiddenEntryTextChanged;
+        _hiddenEntry.Text = code;
+        _hiddenEntry.TextChanged += OnHiddenEntryTextChanged;
+
+        _currentValue = code;
+
+        RedrawAllCells();
+
+        // Haptic feedback on pastea
+        if (HapticFeedbackEnabled)
+            _platformService.TriggerHaptic(HapticType.Input);
+
+        // Notify listeners
+        ValueChanged?.Invoke(this, code);
+        OtpCompleted?.Invoke(this, code);
+
+        // Clear clipboard so OTP doesn't linger
+        if (ClearClipboardAfterPaste)
+            await _platformService.ClearClipboardAsync();
+    }
+
     private void OnHiddenEntryHandlerChanged(object? sender, EventArgs e)
     {
 #if IOS
@@ -373,6 +458,9 @@ public class OtpView : ContentView
         textField.TextContentType = UIKit.UITextContentType.OneTimeCode;
     }
 #endif
+
+        if (!AllowPaste)
+            _platformService?.SetEntryPasteEnabled(_hiddenEntry, false);
     }
 
     /// <summary>
@@ -391,6 +479,17 @@ public class OtpView : ContentView
     private void OnHiddenEntryTextChanged(object? sender, TextChangedEventArgs e)
     {
         if (!IsOtpEnabled) return;
+
+        // A human types one char at a time.
+        // If more than 1 char was added simultaneously → it was pasted.
+        // This is to catch cases where the user pastes input via a third party keyboard or extreme edge cases where we cant predict
+        var charsAdded = e.NewTextValue.Length - (e.OldTextValue?.Length ?? 0);
+        if (!AllowPaste && charsAdded > 1)
+        {
+            // Silently reject — restore previous value
+            _hiddenEntry.Text = e.OldTextValue ?? string.Empty;
+            return;
+        }
 
         // Filter: digits only
         var filtered = new string(
@@ -493,6 +592,17 @@ public class OtpView : ContentView
             RedrawAllCells();
         }
     }
+
+    private void OnAllowPasteChanged(bool allowed)
+    {
+        // Block or restore native paste on the hidden entry
+        _platformService?.SetEntryPasteEnabled(_hiddenEntry, allowed);
+
+        // If paste is fully disabled, force SmartPaste off too
+        if (!allowed)
+            SmartPaste = false;
+    }
+
 
     private void OnIsEnabledChanged(bool isEnabled)
     {

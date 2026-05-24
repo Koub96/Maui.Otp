@@ -7,17 +7,23 @@
 /// </summary>
 internal class OtpPlatformService : IOtpPlatformService
 {
-    public void StartSmsListener(Action<string> onCodeReceived)
-    {
-        // No-op on unsupported platforms
-    }
-
-    public void StopSmsListener()
-    {
-        // No-op on unsupported platforms
-    }
-
     public void TriggerHaptic(HapticType type)
+    {
+        // No-op on unsupported platforms
+    }
+
+    public async Task<string?> GetClipboardTextAsync()
+    {
+        // No-op on unsupported platforms
+        return null;
+    }
+
+    public async Task ClearClipboardAsync()
+    {
+        // No-op on unsupported platforms
+    }
+
+    public void SetEntryPasteEnabled(Entry entry, bool enabled)
     {
         // No-op on unsupported platforms
     }

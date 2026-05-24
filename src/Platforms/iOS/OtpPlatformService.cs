@@ -1,6 +1,10 @@
 ﻿#if IOS
-using UIKit;
+using Foundation;
 using Maui.Otp.Services;
+using Microsoft.Maui.Handlers;
+using Microsoft.Maui.Platform;
+using ObjCRuntime;
+using UIKit;
 
 namespace Maui.Otp.Platforms.iOS;
 
@@ -11,28 +15,31 @@ namespace Maui.Otp.Platforms.iOS;
 /// </summary>
 internal class OtpPlatformService : IOtpPlatformService
 {
-    // -------------------------------------------------------
-    // SMS Listener
-    // -------------------------------------------------------
-
-    public void StartSmsListener(Action<string> onCodeReceived)
+    public async Task<string?> GetClipboardTextAsync()
     {
-        // iOS does NOT require an active SMS listener.
-        // AutoFill is triggered automatically by the OS when:
-        // 1. The hidden Entry has Keyboard = Keyboard.Numeric
-        // 2. The UITextField has textContentType = .oneTimeCode
-        // This is handled directly in OtpView's hidden Entry setup.
-        // No action needed here.
+        try
+        {
+            if (!Clipboard.Default.HasText) return null;
+            return await Clipboard.Default.GetTextAsync();
+        }
+        catch
+        {
+            // Clipboard access can fail silently on some devices
+            return null;
+        }
     }
 
-    public void StopSmsListener()
+    public async Task ClearClipboardAsync()
     {
-        // Nothing to stop on iOS
+        try
+        {
+            await Clipboard.Default.SetTextAsync(string.Empty);
+        }
+        catch
+        {
+            // Ignore — clearing clipboard is best-effort
+        }
     }
-
-    // -------------------------------------------------------
-    // Haptic Feedback
-    // -------------------------------------------------------
 
     public void TriggerHaptic(HapticType type)
     {
@@ -65,6 +72,39 @@ internal class OtpPlatformService : IOtpPlatformService
         {
             // Silently ignore — haptic is non-critical
         }
+    }
+
+    public void SetEntryPasteEnabled(Entry entry, bool enabled)
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            var handler = entry.Handler as EntryHandler;
+
+            // Cast to our custom subclass
+            if (handler?.PlatformView is OtpSecureTextField secureField)
+            {
+                secureField.PasteEnabled = enabled;
+            }
+        });
+    }
+
+}
+
+/// <summary>
+/// Subclasses MauiTextField (MAUI's native wrapper) so the handler
+/// returns the correct type while still allowing us to intercept CanPerform.
+/// </summary>
+internal class OtpSecureTextField : MauiTextField
+{
+    public bool PasteEnabled { get; set; } = true;
+
+    public override bool CanPerform(Selector action, NSObject? withSender)
+    {
+        // Block paste at the native level
+        if (!PasteEnabled && action.Name == "paste:")
+            return false;
+
+        return base.CanPerform(action, withSender);
     }
 }
 #endif

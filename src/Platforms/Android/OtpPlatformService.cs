@@ -1,8 +1,10 @@
 ﻿#if ANDROID
 using Android.Content;
 using Android.OS;
+using Android.Views;
 using Maui.Otp.Services;
 using Microsoft.Maui.ApplicationModel;
+using Microsoft.Maui.Handlers;
 
 namespace Maui.Otp.Platforms.Android;
 
@@ -13,34 +15,31 @@ namespace Maui.Otp.Platforms.Android;
 /// </summary>
 internal class OtpPlatformService : IOtpPlatformService
 {
-    private Action<string>? _onCodeReceived;
-
-    // -------------------------------------------------------
-    // SMS Listener
-    // -------------------------------------------------------
-
-    public void StartSmsListener(Action<string> onCodeReceived)
+    public async Task<string?> GetClipboardTextAsync()
     {
-        _onCodeReceived = onCodeReceived;
-
-        // TODO Phase 2: Start Android SMS Retriever API here
-        // Google Play Services SMS Retriever:
-        // SmsRetrieverClient client = SmsRetriever.GetClient(context);
-        // client.StartSmsRetriever();
-        // Then register a BroadcastReceiver to capture the SMS
-        // and call _onCodeReceived(extractedCode);
+        try
+        {
+            if (!Clipboard.Default.HasText) return null;
+            return await Clipboard.Default.GetTextAsync();
+        }
+        catch
+        {
+            // Clipboard access can fail silently on some devices
+            return null;
+        }
     }
 
-    public void StopSmsListener()
+    public async Task ClearClipboardAsync()
     {
-        _onCodeReceived = null;
-
-        // TODO Phase 2: Unregister BroadcastReceiver here
+        try
+        {
+            await Clipboard.Default.SetTextAsync(string.Empty);
+        }
+        catch
+        {
+            // Ignore — clearing clipboard is best-effort
+        }
     }
-
-    // -------------------------------------------------------
-    // Haptic Feedback
-    // -------------------------------------------------------
 
     public void TriggerHaptic(HapticType type)
     {
@@ -68,5 +67,39 @@ internal class OtpPlatformService : IOtpPlatformService
             // Silently ignore — haptic is non-critical
         }
     }
+
+    public void SetEntryPasteEnabled(Entry entry, bool enabled)
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            var handler = entry.Handler as EntryHandler;
+            var nativeEditText = handler?.PlatformView;
+
+            if (nativeEditText == null) return;
+
+            nativeEditText.CustomInsertionActionModeCallback = enabled
+                ? null                        // restore default
+                : new BlockPasteActionCallback();
+        });
+    }
+}
+
+/// <summary>
+/// Filters out Paste from the native Android context menu.
+/// </summary>
+internal class BlockPasteActionCallback
+    : Java.Lang.Object, ActionMode.ICallback
+{
+    public bool OnCreateActionMode(ActionMode? mode, IMenu? menu) => true;
+
+    public bool OnPrepareActionMode(ActionMode? mode, IMenu? menu)
+    {
+        menu?.RemoveItem(global::Android.Resource.Id.Paste);
+        menu?.RemoveItem(global::Android.Resource.Id.PasteAsPlainText);
+        return true;
+    }
+
+    public bool OnActionItemClicked(ActionMode? mode, IMenuItem? item) => false;
+    public void OnDestroyActionMode(ActionMode? mode) { }
 }
 #endif
