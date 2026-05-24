@@ -5,7 +5,8 @@
              x:Class="Maui.Otp.Sample.MainPage">
 
     <ScrollView>
-        <otp:OtpView></otp:OtpView>
+        <otp:OtpView x:Name="otp" HapticFeedbackEnabled="False" AnimationsEnabled="False" IsPassword="True" 
+        SmartPaste="False" AllowPaste="True" AutoSubmit="True"></otp:OtpView>
     </ScrollView>
 
 </ContentPage>
