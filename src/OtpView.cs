@@ -195,27 +195,6 @@ public class OtpView : ContentView
     // -------------------------------------------------------
 
     /// <summary>
-    /// Enables or disables SMS auto-read.
-    /// Android: uses SMS Retriever API (no permission needed).
-    /// iOS: sets OneTimeCode keyboard type for AutoFill suggestion.
-    /// Default is true.
-    /// </summary>
-    public static readonly BindableProperty SmsAutoReadEnabledProperty =
-        BindableProperty.Create(
-            nameof(SmsAutoReadEnabled),
-            typeof(bool),
-            typeof(OtpView),
-            defaultValue: true);
-
-    public bool SmsAutoReadEnabled
-    {
-        get => (bool)GetValue(SmsAutoReadEnabledProperty);
-        set => SetValue(SmsAutoReadEnabledProperty, value);
-    }
-
-    // -------------------------------------------------------
-
-    /// <summary>
     /// The visual style configuration for all cells.
     /// Assign a custom OtpCellStyle to fully theme the control.
     /// </summary>
@@ -293,6 +272,8 @@ public class OtpView : ContentView
         _hiddenEntry.Focused += (s, e) => RedrawAllCells();
         _hiddenEntry.Unfocused += (s, e) => RedrawAllCells();
 
+        _hiddenEntry.HandlerChanged += OnHiddenEntryHandlerChanged;
+
         // Cell container — horizontal row of GraphicsView cells
         _cellContainer = new HorizontalStackLayout
         {
@@ -312,7 +293,6 @@ public class OtpView : ContentView
         // Build initial cells
         BuildCells();
     }
-
     #endregion
 
     #region Cell Building
@@ -365,6 +345,16 @@ public class OtpView : ContentView
     #endregion
 
     #region Input Handling
+    private void OnHiddenEntryHandlerChanged(object? sender, EventArgs e)
+    {
+#if IOS
+    if (_hiddenEntry.Handler?.PlatformView is UIKit.UITextField textField)
+    {
+        // Tells iOS to suggest OTP codes from SMS
+        textField.TextContentType = UIKit.UITextContentType.OneTimeCode;
+    }
+#endif
+    }
 
     /// <summary>
     /// Focuses the hidden entry to bring up the keyboard.
