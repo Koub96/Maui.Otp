@@ -301,12 +301,6 @@ public class OtpView : ContentView
     /// </summary>
     public event EventHandler<string>? OtpCompleted;
 
-    /// <summary>
-    /// Fired when SMS auto-read successfully retrieves a code.
-    /// Useful for logging or showing a "Code filled from SMS" toast.
-    /// </summary>
-    public event EventHandler<string>? SmsCodeReceived;
-
     #endregion
 
     #region Private Properties
@@ -693,19 +687,44 @@ public class OtpView : ContentView
     }
 
     /// <summary>
-    /// Programmatically fills the OTP from an SMS-retrieved code.
-    /// Fires SmsCodeReceived event.
+    /// Programmatically fills the OTP with the given code.
+    /// Use this for any external fill: SMS auto-read, biometric auth, or programmatic.
+    /// Respects AutoSubmit — fires OtpCompleted if all cells are filled.
     /// </summary>
-    public void FillFromSms(string code)
+    /// <param name="code">The OTP code to fill. Must match Length.</param>
+    public void FillOtp(string code)
     {
         if (string.IsNullOrEmpty(code)) return;
 
-        var digits = new string(code.Where(char.IsDigit).Take(Length).ToArray());
-        if (digits.Length == Length)
-        {
-            Value = digits;
-            SmsCodeReceived?.Invoke(this, digits);
-        }
+        // Filter to digits only and enforce length
+        var digits = new string(
+            code.Where(char.IsDigit)
+                .Take(Length)
+                .ToArray());
+
+        if (digits.Length != Length) return;
+
+        // Sync internal value
+        _currentValue = digits;
+        Value = digits;
+
+        // Sync hidden entry without triggering recursive event
+        _hiddenEntry.TextChanged -= OnHiddenEntryTextChanged;
+        _hiddenEntry.Text = digits;
+        _hiddenEntry.TextChanged += OnHiddenEntryTextChanged;
+
+        RedrawAllCells();
+
+        // Haptic feedback
+        if (HapticFeedbackEnabled)
+            _platformService?.TriggerHaptic(HapticType.Input);
+
+        // Notify value listeners
+        ValueChanged?.Invoke(this, digits);
+
+        // Fire OtpCompleted — respects AutoSubmit
+        if (AutoSubmit)
+            OtpCompleted?.Invoke(this, digits);
     }
 
     #endregion
